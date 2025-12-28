@@ -57,9 +57,9 @@
         'Hidden': 'bg-gray-50 text-gray-400 border-gray-200'
       };
 
-      // Load data from data.json on mount
+      // Load data from GitHub on mount
       useEffect(() => {
-        // Try localStorage first
+        // Try localStorage first for instant display
         const savedData = localStorage.getItem('job-applications');
         if (savedData) {
           try {
@@ -69,10 +69,11 @@
           }
         }
         
-        // Then try to load from data.json
-        fetch('./data.json')
+        // Then load from GitHub (bypasses cache)
+        const timestamp = new Date().getTime();
+        fetch(`https://raw.githubusercontent.com/UrbanvisionMG/job-tracker/main/data.json?t=${timestamp}`)
           .then(res => {
-            if (!res.ok) throw new Error('Failed to fetch');
+            if (!res.ok) throw new Error('Failed to fetch from GitHub');
             return res.json();
           })
           .then(data => {
@@ -80,7 +81,7 @@
             localStorage.setItem('job-applications', JSON.stringify(data));
           })
           .catch(err => {
-            console.error('Failed to load data.json:', err);
+            console.error('Failed to load from GitHub:', err);
             // If localStorage had nothing and fetch failed, use empty array
             if (!savedData) {
               setApplications([]);
