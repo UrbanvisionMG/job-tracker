@@ -222,9 +222,28 @@
         }
       };
 
-      const saveToLocalStorage = (apps) => {
+      const saveToLocalStorage = async (apps) => {
+        // Save to browser
         localStorage.setItem('job-applications', JSON.stringify(apps));
-        alert('💾 Data saved locally! Remember to tell Claude to update GitHub when you want to sync.');
+        
+        // Auto-save to GitHub
+        try {
+          const response = await fetch(WORKER_URL + '/save', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ applications: apps })
+          });
+          
+          if (response.ok) {
+            console.log('✅ Auto-saved to GitHub');
+          } else {
+            console.error('Failed to save to GitHub');
+          }
+        } catch (error) {
+          console.error('GitHub save error:', error);
+        }
       };
 
       const handleDownload = () => {
