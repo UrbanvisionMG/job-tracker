@@ -33,6 +33,7 @@
       const [editingId, setEditingId] = useState(null);
       const [pasteText, setPasteText] = useState('');
       const [isParsing, setIsParsing] = useState(false);
+      const [sortOrder, setSortOrder] = useState('desc'); // 'desc' = newest first, 'asc' = oldest first
       const [formData, setFormData] = useState({
         company: '',
         position: '',
@@ -89,7 +90,13 @@
           });
       }, []);
 
-      const visibleApplications = applications.filter(app => app.status !== 'Hidden');
+      const visibleApplications = applications
+        .filter(app => app.status !== 'Hidden')
+        .sort((a, b) => {
+          const dateA = new Date(a.dateApplied);
+          const dateB = new Date(b.dateApplied);
+          return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
 
       const stats = {
         total: visibleApplications.length,
@@ -606,7 +613,22 @@ Ready to try it? Just paste that message in Claude!`;
                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Company</th>
                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Position</th>
                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location</th>
-                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date Applied</th>
+                    <th 
+                      onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                      style={{ 
+                        padding: '1rem 1.5rem', 
+                        textAlign: 'left', 
+                        fontSize: '0.75rem', 
+                        fontWeight: '500', 
+                        color: '#6b7280', 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.05em',
+                        cursor: 'pointer',
+                        userSelect: 'none'
+                      }}
+                    >
+                      Date Applied {sortOrder === 'desc' ? '▼' : '▲'}
+                    </th>
                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Auto Notes</th>
                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '500', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Personal Notes</th>
