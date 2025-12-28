@@ -21,9 +21,9 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    // ⚠️ SECURITY NOTE: API key is visible in source code - only use for personal projects
-    // Get your API key from: https://console.anthropic.com
-    const ANTHROPIC_API_KEY = 'sk-ant-your-api-key-here'; // REPLACE THIS WITH YOUR KEY
+    // 🔒 SECURE: API key hidden in Cloudflare Worker
+    // Get your Worker URL from: https://workers.cloudflare.com
+    const WORKER_URL = 'https://job-parser.YOUR-USERNAME.workers.dev'; // REPLACE WITH YOUR WORKER URL
     
     const { useState, useEffect } = React;
 
@@ -163,57 +163,29 @@
       const handlePaste = async () => {
         if (!pasteText.trim()) return;
         
-        // Check if API key is set
-        if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'sk-ant-your-api-key-here') {
-          alert('⚠️ Please set your Anthropic API key at the top of the HTML file!\n\nGet one at: https://console.anthropic.com');
+        // Check if Worker URL is set
+        if (!WORKER_URL || WORKER_URL === 'https://job-parser.YOUR-USERNAME.workers.dev') {
+          alert('⚠️ Please set your Cloudflare Worker URL at the top of the HTML file!\n\nSee instructions in README.md');
           return;
         }
         
         setIsParsing(true);
         
         try {
-          const response = await fetch("https://api.anthropic.com/v1/messages", {
+          const response = await fetch(WORKER_URL, {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "x-api-key": ANTHROPIC_API_KEY,
-              "anthropic-version": "2023-06-01"
+              "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-              model: "claude-sonnet-4-20250514",
-              max_tokens: 1000,
-              messages: [
-                { 
-                  role: "user", 
-                  content: `Extract the job application details from this text and return ONLY valid JSON with no markdown formatting, no backticks, no explanation:
-
-Text: ${pasteText}
-
-Return format (use null if not found):
-{
-  "position": "job title",
-  "company": "company name",
-  "location": "city, state or full location",
-  "salary": "salary range if mentioned"
-}`
-                }
-              ],
-            })
+            body: JSON.stringify({ text: pasteText })
           });
 
-          const data = await response.json();
-          
           if (!response.ok) {
-            throw new Error(data.error?.message || 'API request failed');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Worker request failed');
           }
           
-          const responseText = data.content
-            .filter(item => item.type === "text")
-            .map(item => item.text)
-            .join("");
-          
-          const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-          const parsed = JSON.parse(cleanedText);
+          const parsed = await response.json();
           
           if (!parsed.position) {
             alert('Could not find job position in pasted text. Please try again or use manual entry.');
