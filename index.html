@@ -21,12 +21,19 @@
   <div id="root"></div>
 
   <script type="text/babel">
+    // ⚠️ SECURITY NOTE: API key is visible in source code - only use for personal projects
+    // Get your API key from: https://console.anthropic.com
+    const ANTHROPIC_API_KEY = 'sk-ant-your-api-key-here'; // REPLACE THIS WITH YOUR KEY
+    
     const { useState, useEffect } = React;
 
     function JobTracker() {
       const [applications, setApplications] = useState([]);
       const [showAddForm, setShowAddForm] = useState(false);
+      const [showPasteForm, setShowPasteForm] = useState(false);
       const [editingId, setEditingId] = useState(null);
+      const [pasteText, setPasteText] = useState('');
+      const [isParsing, setIsParsing] = useState(false);
       const [formData, setFormData] = useState({
         company: '',
         position: '',
@@ -151,6 +158,98 @@
         });
         setShowAddForm(false);
         setEditingId(null);
+      };
+
+      const handlePaste = async () => {
+        if (!pasteText.trim()) return;
+        
+        // Check if API key is set
+        if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'sk-ant-your-api-key-here') {
+          alert('⚠️ Please set your Anthropic API key at the top of the HTML file!\n\nGet one at: https://console.anthropic.com');
+          return;
+        }
+        
+        setIsParsing(true);
+        
+        try {
+          const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": ANTHROPIC_API_KEY,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 1000,
+              messages: [
+                { 
+                  role: "user", 
+                  content: `Extract the job application details from this text and return ONLY valid JSON with no markdown formatting, no backticks, no explanation:
+
+Text: ${pasteText}
+
+Return format (use null if not found):
+{
+  "position": "job title",
+  "company": "company name",
+  "location": "city, state or full location",
+  "salary": "salary range if mentioned"
+}`
+                }
+              ],
+            })
+          });
+
+          const data = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(data.error?.message || 'API request failed');
+          }
+          
+          const responseText = data.content
+            .filter(item => item.type === "text")
+            .map(item => item.text)
+            .join("");
+          
+          const cleanedText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          const parsed = JSON.parse(cleanedText);
+          
+          if (!parsed.position) {
+            alert('Could not find job position in pasted text. Please try again or use manual entry.');
+            setIsParsing(false);
+            return;
+          }
+          
+          const notes = [];
+          if (parsed.salary) notes.push(`Salary: ${parsed.salary}`);
+          notes.push('Imported via AI paste');
+          
+          const newApp = {
+            id: Date.now().toString(),
+            company: parsed.company || 'Unknown',
+            position: parsed.position,
+            location: parsed.location || '',
+            dateApplied: new Date().toISOString().split('T')[0],
+            status: 'Applied',
+            notes: notes.join(' | '),
+            personalNotes: '',
+            screenshotUrl: ''
+          };
+          
+          const updatedApps = [newApp, ...applications];
+          setApplications(updatedApps);
+          saveToLocalStorage(updatedApps);
+          
+          setPasteText('');
+          setShowPasteForm(false);
+          alert(`✅ Added: ${newApp.position} at ${newApp.company}`);
+        } catch (error) {
+          console.error('Parsing error:', error);
+          alert(`Failed to parse the pasted text:\n${error.message}\n\nPlease try again or use manual entry.`);
+        } finally {
+          setIsParsing(false);
+        }
       };
 
       const saveToLocalStorage = (apps) => {
@@ -299,11 +398,23 @@ Ready to try it? Just paste that message in Claude!`;
               <button
                 onClick={() => {
                   setShowAddForm(!showAddForm);
+                  setShowPasteForm(false);
                 }}
                 style={{ background: '#4f46e5', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               >
                 <span>➕</span>
                 {showAddForm ? 'Cancel' : 'Add New Application'}
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowPasteForm(!showPasteForm);
+                  setShowAddForm(false);
+                }}
+                style={{ background: '#10b981', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+              >
+                <span>✨</span>
+                {showPasteForm ? 'Cancel' : 'AI Quick Paste'}
               </button>
               
               <button
@@ -330,6 +441,39 @@ Ready to try it? Just paste that message in Claude!`;
                 Download Backup
               </button>
             </div>
+
+            {/* Paste Form */}
+            {showPasteForm && (
+              <div style={{ background: '#f0fdf4', padding: '1.5rem', borderRadius: '0.5rem', marginBottom: '1.5rem', border: '2px solid #86efac' }}>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem', color: '# 1f2937' }}>✨ AI Quick Paste</h3>
+                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+                  Paste job details from Indeed, LinkedIn, or any job email. AI will automatically extract the information.
+                </p>
+                <textarea
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '1rem', minHeight: '150px', fontFamily: 'inherit' }}
+                  placeholder="Paste job details here..."
+                />
+                <button
+                  onClick={handlePaste}
+                  disabled={isParsing || !pasteText.trim()}
+                  style={{ 
+                    marginTop: '1rem',
+                    background: isParsing ? '#9ca3af' : '#10b981', 
+                    color: 'white', 
+                    padding: '0.5rem 1.5rem', 
+                    borderRadius: '0.5rem', 
+                    fontWeight: '600', 
+                    border: 'none', 
+                    cursor: isParsing ? 'not-allowed' : 'pointer',
+                    opacity: (!pasteText.trim() || isParsing) ? 0.5 : 1
+                  }}
+                >
+                  {isParsing ? '🤖 Parsing with AI...' : 'Import Application'}
+                </button>
+              </div>
+            )}
 
             {/* Add Form */}
             {showAddForm && (
