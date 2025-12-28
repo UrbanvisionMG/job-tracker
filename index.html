@@ -7,7 +7,6 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     body {
       margin: 0;
@@ -23,10 +22,6 @@
 
   <script type="text/babel">
     const { useState, useEffect } = React;
-    const { 
-      Briefcase, Plus, TrendingUp, Clock, CheckCircle, XCircle, 
-      Edit2, Trash2, Save, Download, Camera, Mail, RefreshCw 
-    } = lucide;
 
     function JobTracker() {
       const [applications, setApplications] = useState([]);
@@ -61,12 +56,32 @@
 
       // Load data from data.json on mount
       useEffect(() => {
+        // Try localStorage first
+        const savedData = localStorage.getItem('job-applications');
+        if (savedData) {
+          try {
+            setApplications(JSON.parse(savedData));
+          } catch (e) {
+            console.error('Failed to parse localStorage:', e);
+          }
+        }
+        
+        // Then try to load from data.json
         fetch('./data.json')
-          .then(res => res.json())
-          .then(data => setApplications(data))
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to fetch');
+            return res.json();
+          })
+          .then(data => {
+            setApplications(data);
+            localStorage.setItem('job-applications', JSON.stringify(data));
+          })
           .catch(err => {
-            console.error('Failed to load data:', err);
-            setApplications([]);
+            console.error('Failed to load data.json:', err);
+            // If localStorage had nothing and fetch failed, use empty array
+            if (!savedData) {
+              setApplications([]);
+            }
           });
       }, []);
 
@@ -311,7 +326,7 @@ Ready to try it? Just paste that message in Claude!`;
             {/* Header */}
             <div style={{ marginBottom: '2rem' }}>
               <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <Briefcase color="#4f46e5" size={40} />
+                <span style={{ fontSize: '40px' }}>💼</span>
                 Micah Auto Job Application Tracker
               </h1>
               <p style={{ color: '#6b7280' }}>Stay organized and land your dream job</p>
@@ -325,7 +340,7 @@ Ready to try it? Just paste that message in Claude!`;
                     <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>Total Applications</p>
                     <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>{stats.total}</p>
                   </div>
-                  <Briefcase size={32} style={{ opacity: 0.8 }} />
+                  <span style={{ fontSize: '32px', opacity: 0.8 }}>💼</span>
                 </div>
               </div>
 
@@ -335,7 +350,7 @@ Ready to try it? Just paste that message in Claude!`;
                     <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>This Week</p>
                     <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>{stats.thisWeek}</p>
                   </div>
-                  <TrendingUp size={32} style={{ opacity: 0.8 }} />
+                  <span style={{ fontSize: '32px', opacity: 0.8 }}>📈</span>
                 </div>
               </div>
 
@@ -345,7 +360,7 @@ Ready to try it? Just paste that message in Claude!`;
                     <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>Interviews</p>
                     <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>{stats.interviews}</p>
                   </div>
-                  <Clock size={32} style={{ opacity: 0.8 }} />
+                  <span style={{ fontSize: '32px', opacity: 0.8 }}>⏰</span>
                 </div>
               </div>
 
@@ -355,7 +370,7 @@ Ready to try it? Just paste that message in Claude!`;
                     <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>Offers</p>
                     <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>{stats.offers}</p>
                   </div>
-                  <CheckCircle size={32} style={{ opacity: 0.8 }} />
+                  <span style={{ fontSize: '32px', opacity: 0.8 }}>✅</span>
                 </div>
               </div>
             </div>
@@ -369,7 +384,7 @@ Ready to try it? Just paste that message in Claude!`;
                 }}
                 style={{ background: '#4f46e5', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               >
-                <Plus size={20} />
+                <span>➕</span>
                 {showAddForm ? 'Cancel' : 'Add New Application'}
               </button>
               
@@ -380,7 +395,7 @@ Ready to try it? Just paste that message in Claude!`;
                 }}
                 style={{ background: '#10b981', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               >
-                <Edit2 size={20} />
+                <span>✏️</span>
                 {showPasteForm ? 'Cancel' : 'Quick Paste Import'}
               </button>
               
@@ -388,7 +403,7 @@ Ready to try it? Just paste that message in Claude!`;
                 onClick={handleCheckGmail}
                 style={{ background: '#3b82f6', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               >
-                <RefreshCw size={20} />
+                <span>🔄</span>
                 Check Gmail (24h)
               </button>
               
@@ -396,7 +411,7 @@ Ready to try it? Just paste that message in Claude!`;
                 onClick={handleSendEmail}
                 style={{ background: '#8b5cf6', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               >
-                <Mail size={20} />
+                <span>📧</span>
                 Send as Email
               </button>
               
@@ -404,7 +419,7 @@ Ready to try it? Just paste that message in Claude!`;
                 onClick={handleDownload}
                 style={{ background: '#374151', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
               >
-                <Download size={20} />
+                <span>⬇️</span>
                 Download Backup
               </button>
             </div>
@@ -501,7 +516,7 @@ Ready to try it? Just paste that message in Claude!`;
                     
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Camera size={16} />
+                        <span>📷</span>
                         Screenshot URL (optional)
                       </label>
                       <input
@@ -519,7 +534,7 @@ Ready to try it? Just paste that message in Claude!`;
                       type="submit"
                       style={{ background: '#4f46e5', color: 'white', padding: '0.5rem 1.5rem', borderRadius: '0.5rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem', border: 'none', cursor: 'pointer' }}
                     >
-                      <Save size={18} />
+                      <span>💾</span>
                       {editingId ? 'Update' : 'Add'} Application
                     </button>
                     <button
@@ -622,14 +637,14 @@ Ready to try it? Just paste that message in Claude!`;
                             href={app.screenshotUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            style={{ color: '#4f46e5', display: 'inline-block' }}
+                            style={{ color: '#4f46e5', display: 'inline-block', fontSize: '20px' }}
                             title="View screenshot"
                           >
-                            <Camera size={20} />
+                            📷
                           </a>
                         ) : (
-                          <span style={{ color: '#d1d5db' }}>
-                            <Camera size={20} />
+                          <span style={{ color: '#d1d5db', fontSize: '20px' }}>
+                            📷
                           </span>
                         )}
                       </td>
@@ -637,17 +652,17 @@ Ready to try it? Just paste that message in Claude!`;
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button
                             onClick={() => handleEdit(app)}
-                            style={{ color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                            style={{ color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '18px' }}
                             title="Edit"
                           >
-                            <Edit2 size={18} />
+                            ✏️
                           </button>
                           <button
                             onClick={() => handleDelete(app.id)}
-                            style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                            style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', fontSize: '18px' }}
                             title="Delete"
                           >
-                            <Trash2 size={18} />
+                            🗑️
                           </button>
                         </div>
                       </td>
