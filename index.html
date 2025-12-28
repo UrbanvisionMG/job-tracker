@@ -107,14 +107,19 @@
 
       const handleSubmit = (e) => {
         e.preventDefault();
+        console.log('🔍 SUBMIT - Editing:', editingId);
+        console.log('🔍 SUBMIT - Form Data:', formData);
+        
         if (editingId) {
           const updatedApps = applications.map(app =>
             app.id === editingId ? { ...formData, id: editingId } : app
           );
+          console.log('🔍 SUBMIT - Updated Apps:', updatedApps.find(a => a.id === editingId));
           setApplications(updatedApps);
           saveToLocalStorage(updatedApps);
         } else {
           const newApp = { ...formData, id: Date.now().toString() };
+          console.log('🔍 SUBMIT - New App:', newApp);
           const updatedApps = [newApp, ...applications];
           setApplications(updatedApps);
           saveToLocalStorage(updatedApps);
@@ -123,6 +128,8 @@
       };
 
       const handleEdit = (app) => {
+        console.log('✏️ EDIT - App to edit:', app);
+        console.log('✏️ EDIT - dateApplied:', app.dateApplied);
         setFormData(app);
         setEditingId(app.id);
         setShowAddForm(true);
