@@ -194,7 +194,6 @@
           
           const notes = [];
           if (parsed.salary) notes.push(`Salary: ${parsed.salary}`);
-          notes.push('Imported via AI paste');
           
           const newApp = {
             id: Date.now().toString(),
@@ -238,12 +237,14 @@
           });
           
           if (response.ok) {
-            console.log('✅ Auto-saved to GitHub');
+            const result = await response.json();
+            console.log('✅ Auto-saved to GitHub:', result.success ? 'Success' : result);
           } else {
-            console.error('Failed to save to GitHub');
+            const errorData = await response.text();
+            console.error('❌ Failed to save to GitHub:', response.status, errorData);
           }
         } catch (error) {
-          console.error('GitHub save error:', error);
+          console.error('❌ GitHub save error:', error);
         }
       };
 
